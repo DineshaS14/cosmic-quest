@@ -19,6 +19,7 @@ interface Enemy {
   x: number;
   y: number;
   speed: number;
+  image: HTMLImageElement; // Enemy now has an image
 }
 
 const Game: React.FC = () => {
@@ -39,14 +40,25 @@ const Game: React.FC = () => {
   const bulletSpeed = 7;
   const enemySpeed = 2;
   const playerImageRef = useRef<HTMLImageElement | null>(null);
+  const enemyImagesRef = useRef<HTMLImageElement[]>([]);
 
-  // Load the player image
+  // Load images for player and enemies
   useEffect(() => {
+    // Load player image
     const playerImage = new Image();
-    playerImage.src = '/images/fighterJet.jpg'; // Path to the image in the public folder
+    playerImage.src = '/images/fighterJet.jpg';
     playerImage.onload = () => {
       playerImageRef.current = playerImage;
     };
+
+    // Load enemy images
+    const enemyImages: HTMLImageElement[] = [];
+    for (let i = 1; i <= 6; i++) {
+      const img = new Image();
+      img.src = `/images/ast${i}.jpg`; // Load ast1.jpg - ast6.jpg
+      enemyImages.push(img);
+    }
+    enemyImagesRef.current = enemyImages;
   }, []);
 
   // Handle player movement
@@ -86,7 +98,7 @@ const Game: React.FC = () => {
         ]);
       }
 
-      // Update bullets (only Y position changes)
+      // Update bullets
       setBullets((prev) =>
         prev
           .map((b) => ({
@@ -96,7 +108,7 @@ const Game: React.FC = () => {
           .filter((b) => b.y > -10)
       );
 
-      // Update enemies (only Y position changes)
+      // Update enemies
       setEnemies((prev) =>
         prev
           .map((e) => ({
@@ -115,13 +127,19 @@ const Game: React.FC = () => {
   }, [spacePressed, player]);
 
   const spawnEnemies = () => {
-    if (Math.random() < 0.02) {
+    if (Math.random() < 0.02 && enemyImagesRef.current.length > 0) {
+      const randomImage =
+        enemyImagesRef.current[
+          Math.floor(Math.random() * enemyImagesRef.current.length)
+        ];
+
       setEnemies((prev) => [
         ...prev,
         {
           x: Math.random() * 400,
           y: 0,
           speed: enemySpeed,
+          image: randomImage, // Assign random image
         },
       ]);
     }
@@ -185,10 +203,6 @@ const Game: React.FC = () => {
         player.width,
         player.height
       );
-    } else {
-      // Fallback: draw rectangle if image fails to load
-      context.fillStyle = 'blue';
-      context.fillRect(player.x, player.y, player.width, player.height);
     }
 
     // Draw bullets
@@ -197,10 +211,15 @@ const Game: React.FC = () => {
       context.fillRect(bullet.x, bullet.y, 5, 10);
     });
 
-    // Draw enemies
-    context.fillStyle = 'red';
+    // Draw enemies with images
     enemies.forEach((enemy) => {
-      context.fillRect(enemy.x, enemy.y, 50, 50);
+      if (enemy.image) {
+        context.drawImage(enemy.image, enemy.x, enemy.y, 50, 50);
+      } else {
+        // Fallback: draw red rectangle if image fails
+        context.fillStyle = 'red';
+        context.fillRect(enemy.x, enemy.y, 50, 50);
+      }
     });
 
     // Draw score
