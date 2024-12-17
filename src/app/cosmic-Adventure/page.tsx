@@ -1,8 +1,8 @@
 'use client';
 import React, { useState } from 'react';
-import Game from '@/components/Game';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import Game from '@/components/Game';
 
 const Home: React.FC = () => {
   const [isGameStarted, setIsGameStarted] = useState<boolean>(false);
@@ -20,7 +20,7 @@ const Home: React.FC = () => {
     <div className="">
       {/* Main Container */}
       <button
-              onClick={() => handleBack}
+              onClick={handleBack}
               className="absolute top-2 left-2 px-4 py-2 bg-red-600 text-white font-bold rounded-md hover:bg-red-700 transition duration-300 z-10"
             >
               Back

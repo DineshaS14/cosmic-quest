@@ -35,27 +35,27 @@ const Game: React.FC = () => {
   const [enemies, setEnemies] = useState<Enemy[]>([]);
   const [score, setScore] = useState<number>(0);
   const [spacePressed, setSpacePressed] = useState<boolean>(false);
+  const [level, setLevel] = useState<number>(1); // Add level state
+  const [currentEnemySpeed, setCurrentEnemySpeed] = useState<number>(2); // Enemy speed
 
   const playerSpeed = 5;
   const bulletSpeed = 7;
-  const enemySpeed = 2;
+  const baseEnemySpeed = 2; // Base speed for enemies
   const playerImageRef = useRef<HTMLImageElement | null>(null);
   const enemyImagesRef = useRef<HTMLImageElement[]>([]);
 
   // Load images for player and enemies
   useEffect(() => {
-    // Load player image
     const playerImage = new Image();
     playerImage.src = '/images/fighterJet.jpg';
     playerImage.onload = () => {
       playerImageRef.current = playerImage;
     };
 
-    // Load enemy images
     const enemyImages: HTMLImageElement[] = [];
     for (let i = 1; i <= 6; i++) {
       const img = new Image();
-      img.src = `/images/ast${i}.jpg`; // Load ast1.jpg - ast6.jpg
+      img.src = `/images/ast${i}.jpg`;
       enemyImages.push(img);
     }
     enemyImagesRef.current = enemyImages;
@@ -68,8 +68,7 @@ const Game: React.FC = () => {
       let newY = prev.y;
 
       if (e.key === 'ArrowLeft') newX = Math.max(prev.x - playerSpeed, 0);
-      if (e.key === 'ArrowRight')
-        newX = Math.min(prev.x + playerSpeed, 450 - prev.width);
+      if (e.key === 'ArrowRight') newX = Math.min(prev.x + playerSpeed, 450 - prev.width);
       if (e.key === 'ArrowUp') newY = Math.max(prev.y - playerSpeed, 0);
       if (e.key === 'ArrowDown') newY = Math.min(prev.y + playerSpeed, 500 - prev.height);
 
@@ -101,45 +100,44 @@ const Game: React.FC = () => {
       // Update bullets
       setBullets((prev) =>
         prev
-          .map((b) => ({
-            ...b,
-            y: b.y - b.speed,
-          }))
+          .map((b) => ({ ...b, y: b.y - b.speed }))
           .filter((b) => b.y > -10)
       );
 
       // Update enemies
       setEnemies((prev) =>
         prev
-          .map((e) => ({
-            ...e,
-            y: e.y + e.speed,
-          }))
+          .map((e) => ({ ...e, y: e.y + e.speed }))
           .filter((e) => e.y < 500)
       );
 
       spawnEnemies();
       detectCollisions();
       detectPlayerHits();
+
+      // Level-up logic: Increase enemy speed every 1000 points
+      const newLevel = Math.floor(score / 1000) + 1;
+      if (newLevel > level) {
+        setLevel(newLevel);
+        setCurrentEnemySpeed(baseEnemySpeed + newLevel * 0.2); // Increment speed slightly
+      }
     }, 30);
 
     return () => clearInterval(interval);
-  }, [spacePressed, player]);
+  }, [spacePressed, player, score, level]);
 
   const spawnEnemies = () => {
     if (Math.random() < 0.02 && enemyImagesRef.current.length > 0) {
       const randomImage =
-        enemyImagesRef.current[
-          Math.floor(Math.random() * enemyImagesRef.current.length)
-        ];
+        enemyImagesRef.current[Math.floor(Math.random() * enemyImagesRef.current.length)];
 
       setEnemies((prev) => [
         ...prev,
         {
           x: Math.random() * 400,
           y: 0,
-          speed: enemySpeed,
-          image: randomImage, // Assign random image
+          speed: currentEnemySpeed, // Use dynamic enemy speed
+          image: randomImage,
         },
       ]);
     }
@@ -216,23 +214,23 @@ const Game: React.FC = () => {
       if (enemy.image) {
         context.drawImage(enemy.image, enemy.x, enemy.y, 50, 50);
       } else {
-        // Fallback: draw red rectangle if image fails
         context.fillStyle = 'red';
         context.fillRect(enemy.x, enemy.y, 50, 50);
       }
     });
 
-    // Draw score
+    // Draw score and level
     context.fillStyle = 'white';
     context.font = '20px Arial';
     context.fillText(`Score: ${score}`, 10, 20);
+    context.fillText(`Level: ${level}`, 10, 40);
 
     // Draw life bar
     context.fillStyle = 'green';
-    context.fillRect(10, 30, player.life * 2, 20);
+    context.fillRect(10, 50, player.life * 2, 20);
     context.strokeStyle = 'white';
-    context.strokeRect(10, 30, 200, 20);
-  }, [player, bullets, enemies, score]);
+    context.strokeRect(10, 50, 200, 20);
+  }, [player, bullets, enemies, score, level]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
